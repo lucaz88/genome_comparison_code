@@ -8,7 +8,7 @@
   USAGE EXAMPLE (type commands directly in R)
 ```  
 library(devtools)
-source_url("https://github.com/lucaz88/R_script/blob/master/KM_reconstruction.R")
+source_url("https://github.com/lucaz88/genome_comparison_code/blob/main/KM_reconstruction.R")
 
 KM_str &lt;- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~")
 myannotation &lt;- read.csv(url("https://raw.githubusercontent.com/lucaz88/R_script/master/example_KO_table.csv"), header = T, row.names = 1)
