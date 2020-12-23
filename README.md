@@ -6,12 +6,14 @@
   - _KMreco_ uses the retrieved list of diagrams as masks to evaluate the completness of each KMs givens a table of annotated KOs. The input table is a presence/absence table (i.e. 0 and 1) and has samples as rows and annotated KOs as columns. Further arguments are "len_breaks" and "allowed_gaps" that can be used to specify the ammount of allowed gaps allowed in a KM to still call such KM complete depending on its lengths: len_breaks=c(3, 10), allowed_gaps=c(0,1,2) will allows 0 gaps for KM with &lt; 3 reactions, 1 gap for KM with 3 up to 9 reactions, 2 gaps for KM with ≥ 10 reactions. By defauls the function will not allow any gap regardless of the KM length, however, it's recomendable to set these values as issues in the annotation process that could lead to "artifical" gaps are always expected.
   
   USAGE EXAMPLE (type commands directly in R)
-  
-> library(devtools)
-> source_url("https://github.com/lucaz88/R_script/blob/master/KM_reconstruction.R")
-> KM_str &lt;- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~")
-> myannotation &lt;- read.csv(url("https://raw.githubusercontent.com/lucaz88/R_script/master/example_KO_table.csv"), header = T, row.names = 1)
-> KMreco &lt;- KMreco(indata = myannotation, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
+```  
+library(devtools)
+source_url("https://github.com/lucaz88/R_script/blob/master/KM_reconstruction.R")
+
+KM_str &lt;- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~")
+myannotation &lt;- read.csv(url("https://raw.githubusercontent.com/lucaz88/R_script/master/example_KO_table.csv"), header = T, row.names = 1)
+KMreco &lt;- KMreco(indata = myannotation, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
+```
 
 - _ATLAS_annotation.R_ is a wrapping workflow for all the functional annotation performed in the manuscript: prokka, KEGG Orthology (including phytohormones production, DHPS and taurine utilization), BioVx (for membrane transporters), AntiSMASH (for secondary metabolites), Vibrioferrin biosynthesis and transport (blastp against UniProt), DMSP degradation pathways (blastp against UniProt)
 - _Statistical_analyses.R_ contains the statistical analysis for the creation of Genome Functional Clusters (GFCs) and the Linked-Trait Clusters (LTCs)
