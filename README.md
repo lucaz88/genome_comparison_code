@@ -10,9 +10,9 @@
 library(devtools)
 source_url("https://github.com/lucaz88/genome_comparison_code/blob/main/KM_reconstruction.R")
 
-KM_str &lt;- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~")
-myannotation &lt;- read.csv(url("https://raw.githubusercontent.com/lucaz88/R_script/master/example_KO_table.csv"), header = T, row.names = 1)
-KMreco &lt;- KMreco(indata = myannotation, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
+KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~")
+myannotation <- read.csv(url("https://raw.githubusercontent.com/lucaz88/R_script/master/example_KO_table.csv"), header = T, row.names = 1)
+KMreco <- KMreco(indata = myannotation, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
 ```
 
 - _ATLAS_annotation.R_ is a wrapping workflow for all the functional annotation performed in the manuscript: prokka, KEGG Orthology (including phytohormones production, DHPS and taurine utilization), BioVx (for membrane transporters), AntiSMASH (for secondary metabolites), Vibrioferrin biosynthesis and transport (blastp against UniProt), DMSP degradation pathways (blastp against UniProt)

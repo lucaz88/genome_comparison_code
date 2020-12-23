@@ -1,9 +1,9 @@
 KMdiagram_fetcher <- function(ncore, create_RData=T, path=getwd(), new_date=Sys.Date()) {
-  #!!!    "ncore": degree of parallelization, can be > of real number of threads but don't exagerate otherwise the fetching script will rise an error
-  #!!!    "create_RData": whether to save or not the fetched list of KM diagrams as RData object
-  #       It saves also a list of KOs which are marked as optional in KM diagrams 
-  #!!!    "path": to the output folder for the RData object
-  #!!!    "new_date": present date used in the output filname e.g. KM_str_'2019-04-12'.RData
+  #    "ncore": degree of parallelization, can be > of real number of threads but don't exagerate otherwise the fetching script will rise an error
+  #    "create_RData": whether to save or not the fetched list of KM diagrams as RData object.
+  #                    It saves also a list of KOs which are marked as optional in KM diagrams 
+  #    "path": to the output folder for the RData object
+  #    "new_date": present date used in the output filname e.g. KM_str_'2019-04-12'.RData
   
   
   ## (get &)load packages
