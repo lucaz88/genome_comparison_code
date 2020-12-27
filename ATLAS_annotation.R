@@ -68,8 +68,8 @@ system2(command = "/home/lucaz/kofamscan-1.2.0/exec_annotation",
 ### BioV-transporters
 dir.create("3_Ann/Transporter")
 
-# #!!! loop per genomes
-# #! ~24h for 50 genomes on a i7 6th generation CPU
+# #!!! loop genome-wise - in R 
+# #! ~24h for 100 genomes on 5 cores (out of 8 on a i7 6th generation CPU; leave ~30-40% free for overhead usage)
 # all_gnm = list.files("3_Ann/Prokka", recursive = T, pattern = ".faa$", full.names = T)
 # all_gnm = all_gnm[!sapply(strsplit(all_gnm, "/"), "[", 3) %in% 
 #                     list.files("3_Ann/Transporter/", recursive = F, full.names = F)] # resume run
@@ -82,9 +82,9 @@ dir.create("3_Ann/Transporter")
 #   )
 # }
 
-#!!! parallel version, run in bash, requires GNU parallel (https://www.gnu.org/software/parallel/)
-#! adjust '-j' to you available cores
-# conda activate BioVx; ls 3_Ann/Prokka/*/*.faa | parallel -j 4 'gblast3.py -i {} -o 3_Ann/Transporter/$(cut -d'/' -f3 <<< {})'
+#!!! loop genome-wise - in BASH (requires GNU parallel, https://www.gnu.org/software/parallel/)
+#! run following command in shell (cd to same working dir); adjust '-j' to you available cores
+conda activate BioVx; ls 3_Ann/Prokka/*/*.faa | parallel -j 4 'gblast3.py -i {} -o 3_Ann/Transporter/$(cut -d'/' -f3 <<< {})'
 
 
 

@@ -59,7 +59,7 @@ KMdiagram_fetcher <- function(ncore, create_RData=T, path=getwd(), new_date=Sys.
   opt_KOs <- opt_KOs[order(as.integer(gsub("M", "", KM_list)))]
   
   if (create_RData) {
-    dir.create(path, recursive = T)
+    dir.create(path, recursive = T, showWarnings = F)
     save(KM_str, opt_KOs, file = file.path(path, paste0("KM_str_", new_date,".RData")))
   }
   return(KM_str)
