@@ -7,13 +7,13 @@
   
   USAGE EXAMPLE (type commands directly in R)
 ```  
-# download and unpack the whole repository in a folder,\e.g. ~/Downloads/genome_comparison_code-main
+# download and unpack the whole repository in a folder, e.g. ~/Downloads/genome_comparison_code-main
 setwd("~/Downloads/genome_comparison_code-main")
 source("KM_reconstruction.R")
 
-KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T,\path = "~/Downloads/genome_comparison_code-main") # it takes a few minutes
+KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~/Downloads/genome_comparison_code-main") # it takes a few minutes
 myannotation <- read.csv("example_KO_table.csv", header = T, row.names = 1)
-KMreco <- KMreco(indata = myannotation, KM_str = KM_str,\len_breaks = c(3), allowed_gaps = c(0,1))
+KMreco <- KMreco(indata = myannotation, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
 
 # example of the presence/absence table of KMs
 KMreco$KM_pa[1:5, 1:5]
