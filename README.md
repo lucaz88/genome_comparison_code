@@ -21,3 +21,8 @@ KMreco$KM_pa[1:5, 1:5]
 
 - _ATLAS_annotation.R_ is a wrapping workflow for all the functional annotation performed in the manuscript: prokka, KEGG Orthology (including phytohormones production, DHPS and taurine utilization), BioVx (for membrane transporters), AntiSMASH (for secondary metabolites), Vibrioferrin biosynthesis and transport (blastp against UniProt), DMSP degradation pathways (blastp against UniProt)
 - _Statistical_analyses.R_ contains the statistical analysis for the creation of Genome Functional Clusters (GFCs) and the Linked-Trait Clusters (LTCs)
+
+
+# Other files:
+- _example_KO_table.csv_ a test dataset of KOs presence/absence for 5 genomes to test the _KM_reconstruction_ code
+- _KM_str_2020-01-09_plus.rds_ the file containing the KM structures updated to Jannuary 2020. It contains also the structures of transporters and two-component systems that were removed with the 92.0 Release (October 1, 2019) as redundant with the BRITE hierarchies (not used in our analysis)
