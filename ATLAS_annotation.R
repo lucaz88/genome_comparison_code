@@ -16,14 +16,16 @@ Sys.setlocale(category = "LC_ALL", locale = "en_US.UTF-8") # to get month names 
 
 
 #!!! required files
-#1 Supplementary tables' file
+# Supplementary tables' file
 suppl_tabs = "/media/lucaz/DATA/Google_drive/Laboratorio/AAA_Progetti_NUOVI/2016_HFSP/4_paper_genome_comparison/6_REV_Comm_biology/Suppl_tables.xlsx" #! adjust the path
-#2 Supplementary file 3 
+# Supplementary file 3 
 VFds = "/media/lucaz/DATA/Google_drive/Laboratorio/AAA_Progetti_NUOVI/2016_HFSP/4_paper_genome_comparison/6_REV_Comm_biology/Suppl_file_3-uniprot-vibrioferrin_01mai20.fasta" #! adjust the path
-#3 Supplementary file 4 
+# Supplementary file 4 
 DMSPds = "/media/lucaz/DATA/Google_drive/Laboratorio/AAA_Progetti_NUOVI/2016_HFSP/4_paper_genome_comparison/6_REV_Comm_biology/Suppl_file_4-uniprot-DMSP_21dec20.fasta" #! adjust the path
-
-
+# KM_reconstruction.R code
+KM_code = "/home/lucaz/myscript/GitHub/gnm_compar/KM_reconstruction.R" 
+# file with KM structures (optional, it can be downloaded anew) 
+KM_str = "/home/lucaz/myscript/GitHub/gnm_compar/KM_str_2020-01-09_plus.rds"
 
 
 
@@ -67,9 +69,9 @@ system2(command = "/home/lucaz/kofamscan-1.2.0/exec_annotation",
 
 ### BioV-transporters
 dir.create("3_Ann/Transporter")
+#! 80 genomes/day on 5 cores (out of 8 cores; leave ~40% free CPU for overhead usage of some steps)
 
 # #!!! loop genome-wise - in R 
-# #! ~24h for 100 genomes on 5 cores (out of 8 on a i7 6th generation CPU; leave ~30-40% free for overhead usage)
 # all_gnm = list.files("3_Ann/Prokka", recursive = T, pattern = ".faa$", full.names = T)
 # all_gnm = all_gnm[!sapply(strsplit(all_gnm, "/"), "[", 3) %in% 
 #                     list.files("3_Ann/Transporter/", recursive = F, full.names = F)] # resume run
@@ -85,6 +87,9 @@ dir.create("3_Ann/Transporter")
 #!!! loop genome-wise - in BASH (requires GNU parallel, https://www.gnu.org/software/parallel/)
 #! run following command in shell (cd to same working dir); adjust '-j' to you available cores
 conda activate BioVx; ls 3_Ann/Prokka/*/*.faa | parallel -j 4 'gblast3.py -i {} -o 3_Ann/Transporter/$(cut -d'/' -f3 <<< {})'
+
+#! if you wanna keep only the essential output:
+# tar -czf 3_Ann/Transporter/transp.tar.gz 3_Ann/Transporter/*/results.tsv
 
 
 
@@ -170,14 +175,14 @@ system2(command = "blastp",
 ### prokka
 library(rtracklayer)
 prok_list = list.files("3_Ann/Prokka", pattern = ".gff$", full.names = T, recursive = T)
-prok_ann1 = lapply(prok_list, readGFF)
+prok_ann = lapply(prok_list, readGFF)
 # to keep also tRNA and tmRNA use i$type != "gene"
-prok_ann2 = lapply(prok_ann1, function(i) as.data.frame(i[i$type == "CDS", c("ID","start","end","strand","gene","product","db_xref","eC_number")]))
-names(prok_ann2) = sapply(strsplit(prok_list, "/"), "[[", 3)
-prok_ann3 = do.call(rbind, prok_ann2)
-prok_ann4 = data.frame(filename=gsub("\\..*", "", row.names(prok_ann3)), prok_ann3)
+prok_ann = lapply(prok_ann, function(i) as.data.frame(i[i$type == "CDS", c("ID","start","end","strand","gene","product","db_xref","eC_number")]))
+names(prok_ann) = sapply(strsplit(prok_list, "/"), "[[", 3)
+prok_ann = do.call(rbind, prok_ann)
+prok_ann = data.frame(filename=gsub("\\..*", "", row.names(prok_ann)), prok_ann)
 
-ann_master_TAB = prok_ann4
+ann_master_TAB = prok_ann
 
 
 
@@ -220,21 +225,41 @@ ann_master_TAB$KO = KO_ann3$KO[match(ann_master_TAB$ID, KO_ann3$gene_name)]
 
 
 ### BioV-transporters
+library(stringr)
 trans_list = list.files(path = Sys.glob("3_Ann/Transporter/*", dirmark = F), full.names = T, pattern = "results.tsv")
 trans_ann1 = lapply(trans_list, function(i) read.delim(i, h=T, sep = "\t"))
+trans_ann2 = do.call(rbind, trans_ann1)
 e_val = 1e-6 # specify e-value threshold
 TMP_over = 1 # min number of trans-membrane alpha-helical counts
-trans_ann2 = lapply(trans_ann1, function(i) 
-             i[i$TM_Overlap_Score >= TMP_over & i$e.value <= e_val, 
-               c("X.Query_id","Hit_tcid","Family_Abrv","Hit_desc","Predicted_Substrate")])
-trans_ann2 = do.call(rbind, trans_ann2)
+trans_ann2 = trans_ann2[trans_ann2$TM_Overlap_Score >= TMP_over & trans_ann2$e.value <= e_val, 
+               c("X.Query_id","Hit_tcid","Family_Abrv","Hit_desc","Predicted_Substrate")]
 trans_ann3 = data.frame(trans_ann2[, 1:3],
-                         accession=sapply(strsplit(trans_ann2$Hit_desc, " "), function(x) paste(x[c(1:2)], collapse = " ")), 
-                         Hit_desc=sapply(strsplit(trans_ann2$Hit_desc, " "), function(x) paste(x[-c(1:2)], collapse = " ")),
-                         Predicted_Substrate=trans_ann2[, 5])
-trans_ann4 = trans_ann3[!grepl("none|unknown", trans_ann3$Predicted_Substrate, ignore.case = T), ]
+                        accession=sapply(strsplit(trans_ann2$Hit_desc, " "), function(x) paste(x[c(1:2)], collapse = " ")), 
+                        Hit_desc=sapply(strsplit(trans_ann2$Hit_desc, " "), function(x) paste(x[-c(1:2)], collapse = " ")),
+                        Predicted_Substrate=gsub("CHEBI:[0-9]+;", "", trans_ann2[, 5]),
+                        CHEBI=sapply(str_extract_all(trans_ann2[, 5], "CHEBI:[0-9]+"), paste0, collapse=";"))
 
-ann_master_TAB$tcdb = trans_ann4$Hit_tcid[match(ann_master_TAB$ID, trans_ann4$X.Query_id)]
+## Select for relevant ones
+trans_ann4 = trans_ann3[sapply(trans_ann3$CHEBI, function(i) {
+  any(strsplit(i, ";")[[1]] %in% 
+        c("CHEBI:15956", "CHEBI:41236", "CHEBI:13905", "CHEBI:22882", "CHEBI:22884", "CHEBI:3108" #B7
+          , "CHEBI:30411" #B12
+          , "CHEBI:17439", "CHEBI:60496", "CHEBI:48820", "CHEBI:3979", "CHEBI:14041", "CHEBI:23435" #CYANO-B12
+          , "CHEBI:17154", "CHEBI:44258", "CHEBI:7556", "CHEBI:14645", "CHEBI:25521" #B3-nicotinamide
+          , "CHEBI:15940", "CHEBI:44319", "CHEBI:7559", "CHEBI:25538" #B3-nicotinic acid
+          , "CHEBI:9532" #B1-2P
+          # , "CHEBI:9533" #B1-1P
+          # , "CHEBI:18385", "CHEBI:46393", "CHEBI:9530", "CHEBI:15227", "CHEBI:26941" #B1-noP
+        ))}), ]
+
+## drop drug efflux pumps
+bad_transp = unique(trans_ann4$Predicted_Substrate)[c(1,4,10,13,14,15,16)] #!!! manual inspect for suspicious transporters and edit
+trans_ann4 = trans_ann4[!trans_ann4$Predicted_Substrate %in% bad_transp, ]
+
+# ## if you wanna keep all transporters
+# trans_ann4 = trans_ann3
+
+ann_master_TAB$TCdb = trans_ann4$Hit_tcid[match(ann_master_TAB$ID, trans_ann4$X.Query_id)]
 
 
 
@@ -242,7 +267,6 @@ ann_master_TAB$tcdb = trans_ann4$Hit_tcid[match(ann_master_TAB$ID, trans_ann4$X.
 
 ### Secondary Metabolites
 #!!! code for AntiSMASH v5
-
 library(rvest)
 sm_list = list.files(path = Sys.glob("3_Ann/Antismash/*", dirmark = F), full.names = T, pattern = "index.html")
 sec_metab = lapply(sm_list, function(i) tryCatch(read_html(i), error = function(x) cat("No secondary metabolites ", i,"\n")) )
@@ -255,6 +279,11 @@ sec_metab4 = do.call(rbind, sec_metab3)
 sec_metab4 = sec_metab4[!grepl("unknown|,", sec_metab4$Type), ]
 sec_metab4$From = as.numeric(gsub(",", "", sec_metab4$From))
 sec_metab4$To = as.numeric(gsub(",", "", sec_metab4$To))
+
+## select relevant ones
+sm_list = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_6", skip = 3)) 
+sm_list = sm_list[!is.na(sm_list$`Interaction traits`), ] # remove extra lines in Excel table
+sec_metab4 = sec_metab4[sec_metab4$Type %in% sm_list$ID[sm_list$`Interaction traits` != "-"], ]
 
 ann_master_TAB$SecMetab = NA
 invisible(apply(sec_metab4, 1, function(j) {
@@ -270,7 +299,6 @@ invisible(apply(sec_metab4, 1, function(j) {
 
 ### Vibrioferrin
 library(stringr)
-
 VF_ann1 = read.delim("3_Ann/Vibrioferrin/Vibrioferrin_blastp.tsv", h=F)
 VF_ann1$gene_ID = gsub(".*\\.","",VF_ann1$V1)
 VF_ann2 = VF_ann1
@@ -299,9 +327,19 @@ VF_ann3 = do.call(rbind, lapply(split(VF_ann2, f = VF_ann2$V1), function(i) {
 }))
 
 ## check for completeness
-???
+library(reshape2)
+VF_ann3$gnm = gsub("_.*", "", VF_ann3$gene_ID)
+VF_ann4 = dcast(VF_ann3, gnm~gene_name)
+#!!! completeness: require at least 4 of 5 genes for both operons
+VF_ann5 = data.frame(gnm=VF_ann4$gnm,
+                     pvsABCDE=apply(VF_ann4[, grepl("pvs", colnames(VF_ann4))], 1, function(x) ifelse(sum(x>0) >= 4, 1, 0)),
+                     pvuABCDE=apply(VF_ann4[, grepl("pvu", colnames(VF_ann4))], 1, function(x) ifelse(sum(x>0) >= 4, 1, 0)))
+VF_ann6 = VF_ann3[(VF_ann3$gnm %in% VF_ann5$gnm[VF_ann5$pvsABCDE > 0] &
+                     grepl("pvs", VF_ann3$gene_name)) |
+                    (VF_ann3$gnm %in% VF_ann5$gnm[VF_ann5$pvuABCDE > 0] 
+                     & grepl("pvu", VF_ann3$gene_name)), ]
 
-ann_master_TAB$Vibrioferrin = VF_ann3$gene_name[match(ann_master_TAB$ID, VF_ann3$gene_ID)]
+ann_master_TAB$Vibrioferrin = VF_ann6$gene_name[match(ann_master_TAB$ID, VF_ann6$gene_ID)]
   
 
 
@@ -371,7 +409,6 @@ invisible(apply(ph_ann6, 1, function(j) {
 
 ### DMSP
 library(stringr)
-
 DMSP_ann1 = read.delim("3_Ann/DMSP_ddd/DMSP_blastp.tsv", h=F)
 DMSP_ann1$gene_ID = gsub(".*\\.","",DMSP_ann1$V1)
 DMSP_ann1$filename = gsub("_.*", "", DMSP_ann1$gene_ID)
@@ -408,7 +445,6 @@ DMSP_ann4a = DMSP_ann4[, grepl("ddd|ALMA", colnames(DMSP_ann4))]
 DMSP_ann4a = apply(DMSP_ann4a, 1, function(j) sum(j>0))
 DMSP_ann4a = names(DMSP_ann4a)[DMSP_ann4a > 0] #!!! completeness: require at least 1 gene (are all redundant)
 
-  
 DMSP_ann4b = DMSP_ann4[, grepl("dmd", colnames(DMSP_ann4))]
 DMSP_ann4b = apply(DMSP_ann4b, 1, function(j) sum(j>0))
 DMSP_ann4b = names(DMSP_ann4b)[DMSP_ann4b >= 3] #!!! completeness: require at least 3 of 4 genes
@@ -472,94 +508,34 @@ meta = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab
 meta = meta[!is.na(meta$Filename), ] # remove extra lines in Excel table
 
 
-
-## reconstruct KM
+### reconstruct KM
 library(reshape2)
-source("/media/lucaz/DATA/Google_drive/Laboratorio/myscripts/r/_KM_reconstruction.R")
-KM_str = KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~/Downloads") # will save the fetched file in the current wd
-load("~/Downloads/KM_str_2020-12-15.RData")
+source(KM_code)
 
-KO_ann3$filename = ann_master_TAB$filename[match(KO_ann3$gene_name, ann_master_TAB$ID)]
-KO_ann4 = dcast(KO_ann3, filename~KO, fill = 0)
-row.names(KO_ann4) = KO_ann4$filename
-KO_ann4 = KO_ann4[, -1]
-KO_ann4[KO_ann4 > 1] = 1
-KM_ann = KMreco(indata = KO_ann4, KM_str = KM_str, len_breaks = c(3), allowed_gaps = c(0,1))
+# # download new KM structures
+# KM_str = KMdiagram_fetcher(ncore = 7, create_RData = T, path = "~/Downloads") # will save the fetched file in the current wd
+# load KM structures used in the paper
+KM_str = readRDS(KM_str)
 
-
-
-
-
-
-##### extract iTRAITs information
-
-ITs_mapping = data.frame(matrix(NA, 0, 5))
-
-## KEGG Modules
-KM_trait = as.data.frame(readxl::read_xls("../interaction_traits_02.xls", sheet = "KEGG_modules_2"))
-KM_trait2 = KM_trait[KM_trait$Trait != "-", ]
-KM_trait3 = KM_ann[, colnames(KM_ann) %in% KM_trait2$ID]
-# KM_trait4 = t(rowsum(t(KM_trait3), group = colnames(KM_trait3)))
-KM_trait5 = KM_trait3 # keep inter-traits separated
-# KM_trait5 = KM_trait4 # merge inter-traits with same name
-KM_trait5[KM_trait5 > 0] = 1
-tr_KM = KM_trait5
-#!!! mark genomes with specific antimic-res traits (i.e. not involved in other metabolisms)
-antimic.res_man = tr_KM[, match(KM_trait2$ID[grepl("Antimic-res", KM_trait2$Trait)], colnames(tr_KM))]
-antimic.res_man = t(rowsum(t(antimic.res_man), group = is.na(KM_trait2$`Other roles`)[grepl("Antimic-res", KM_trait2$Trait)]))
-colnames(antimic.res_man) = c("other_metab","only_res")
-#---
-ITs_mapping = rbind(ITs_mapping, data.frame(col_lab=colnames(tr_KM), trait=KM_trait2$Trait[match(colnames(tr_KM), KM_trait2$ID)],
-                                             text=gsub(" \\[.*", "", KM_trait2$Description[match(colnames(tr_KM), KM_trait2$ID)]),
-                                             db="KEGG_modules"))
-
-## Phyto hormones
-PH_trait = as.data.frame(readxl::read_xls("../interaction_traits_02.xls", sheet = "Plant_hormones"))
-PH_trait3 = P.horm_ann[, colnames(P.horm_ann) %in% PH_trait$ID]
-# PH_trait4 = t(rowsum(t(PH_trait3), group = colnames(PH_trait3)))
-PH_trait5 = PH_trait3 # keep inter-traits separated
-# PH_trait5 = PH_trait4 # merge inter-traits with same name
-PH_trait5[PH_trait5 > 0] = 1
-tr_PH = PH_trait5
-ITs_mapping = rbind(ITs_mapping, data.frame(col_lab=colnames(tr_PH), trait=PH_trait$Trait[match(colnames(tr_PH), PH_trait$ID)],
-                                             text=gsub(":", ": ", gsub("_", " ", PH_trait$ID[match(colnames(tr_PH), PH_trait$ID)])), db="KEGG_reactions"))
-
-## TonB-dependent receptor
-TonB_trait = as.data.frame(readxl::read_xls("../interaction_traits_02.xls", sheet = "TonB_dependent_3"))
-TonB_trait3 = Trans_ann[, colnames(Trans_ann) %in% TonB_trait$ID]
-# TonB_trait4 = t(rowsum(t(TonB_trait3), group = colnames(TonB_trait3)))
-TonB_trait5 = TonB_trait3 # keep inter-traits separated
-# TonB_trait5 = TonB_trait4 # merge inter-traits with same name
-TonB_trait5[TonB_trait5 > 0] = 1
-tr_TonB = TonB_trait5
-ITs_mapping = rbind(ITs_mapping, data.frame(col_lab=colnames(tr_TonB), trait=TonB_trait$Trait[match(colnames(tr_TonB), TonB_trait$ID)],
-                                             text=colnames(tr_TonB), db="TCdb"))
-
-## Secondary metabolites
-SM_trait = as.data.frame(readxl::read_xls("../interaction_traits_02.xls", sheet = "Secondary_metabolites"))
-SM_trait2 = SM_trait[SM_trait$Trait != "-", ]
-SM_trait3 = SM_ann[, colnames(SM_ann) %in% SM_trait2$ID]
-colnames(SM_trait3) = make.unique(colnames(SM_trait3), sep = ".")
-# SM_trait4 = t(rowsum(t(SM_trait3), group = colnames(SM_trait3)))
-SM_trait5 = SM_trait3 # keep inter-traits separated
-# SM_trait5 = SM_trait4 # merge inter-traits with same name
-SM_trait5[SM_trait5 > 0] = 1
-tr_SM = SM_trait5
-ITs_mapping = rbind(ITs_mapping, data.frame(col_lab=colnames(tr_SM), trait=SM_trait2$Trait[match(colnames(tr_SM), SM_trait2$ID)],
-                                             text=SM_trait2$Description[match(colnames(tr_SM), SM_trait2$ID)], db="AntiSMASH"))
-
-## Vibrioferrin manual
-
-#!!! look for pvsB and allow for 1 missing genes in pvsACDE
-#!!! allows for 1 missing genes in pvuABCDE
-VF_tmp7 = data.frame(pvsABCDE=apply(VF_tmp6[, grepl("pvs", colnames(VF_tmp6))], 1, function(x) ifelse((x[2] > 0 | x[3] > 0) & sum(x[c(1,4:6)] > 0) >= 3, 1, 0)),
-                     pvuABCDE=apply(VF_tmp6[, grepl("pvu", colnames(VF_tmp6))], 1, function(x) ifelse(sum(x>0) >= 4, 1, 0)))
-# qq6b=cbind(VF_tmp7, meta$Species[match(row.names(VF_tmp7), meta$codeNAME)], meta$GFC[match(row.names(VF_tmp7), meta$codeNAME)])
-VF_man = VF_tmp7
-# write.table(VF_tmp8, "../3_Ann/Vibrioferrin/VF_summary_tab.tsv", row.names = T, col.names = T, sep = "\t", quote = F)
+ann_master_TAB$cnt = 1
+KO_ann = dcast(ann_master_TAB, filename~KO, value.var = "cnt")
+row.names(KO_ann) = KO_ann$filename
+KO_ann = KO_ann[, -1]
+KO_ann[KO_ann > 1] = 1
+KM_ann = KMreco(indata = KO_ann, KM_str = KM_str, 
+                len_breaks = c(3), allowed_gaps = c(0,1))
 
 
-tr_VF = VF_man
+### create trait-table
+fun_profi = cbind(KM_ann$KM_pa
+                  , 
+                  )
+
+
+
+
+
+
 ITs_mapping = rbind(ITs_mapping, data.frame(col_lab=colnames(tr_VF), trait=c("Siderophore","Siderophore-trans"),
                                              text=c("Vibrioferrin biosynthesis","Vibrioferrin transporter"), db="VF"))
 
