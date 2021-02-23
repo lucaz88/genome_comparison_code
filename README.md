@@ -24,5 +24,5 @@ KMreco$KM_pa[1:5, 1:5]
 
 
 # Other files:
-- _example_KO_table.csv_ a test dataset of KOs presence/absence for 5 genomes to test the _KM_reconstruction_ code
-- _KM_str_2020-01-09_plus.rds_ the file containing the KM structures updated to Jannuary 2020. It contains also the structures of transporters and two-component systems that were removed with the 92.0 Release (October 1, 2019) as redundant with the BRITE hierarchies (not used in our analysis)
+- _example_KO_table.csv_ is a test dataset of KOs presence/absence for 5 genomes to test the _KM_reconstruction_ code
+- _KM_str_2020-01-09_plus.rds_ contains the KM structures updated to Jannuary 2020 plus the structures of transporters and two-component systems that were removed with the Release 92.0  of KEGG (October 1, 2019) as they were redundant with the BRITE hierarchies (not used in our analysis)
