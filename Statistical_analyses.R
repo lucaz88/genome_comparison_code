@@ -46,20 +46,20 @@ gnm_cor[gnm_cor < 0] = 0 #! there are no neg correlation (as expected)
 # #---
 apcl_gnm = apcluster(s = gnm_cor, details=T, q=0.5, lam=0.5, seed=1234, maxits=1000, convits=500)
 
-
-## get hclust object from apcluster
-gnm_hc_tmp = 1 - as.matrix(cophenetic(as.dendrogram(aggExCluster(s = gnm_cor, x = apcl_gnm))))
-gnm_hc_tmp = gnm_hc_tmp[match(row.names(fun_profi), row.names(gnm_hc_tmp)), 
-                         match(row.names(fun_profi), colnames(gnm_hc_tmp))]
-gnm_hc = as.hclust(aggExCluster(s = gnm_hc_tmp))
-gnm_hc = reorder(gnm_hc, wts = colSums(fun_profi), agglo.FUN = "mean") # improve dendro sorting
-gnm_hc$order = as.integer(gnm_hc$order) # otherwise it rises an issue when plotting with iheatmapr
-
 # heatmap(apcl_gnm, gnm_dist); # plot(apcl_gnm, fun_profi); 
 gnm_GFC_tmp = do.call(rbind, lapply(1:length(apcl_gnm@clusters), function(i) data.frame(i, apcl_gnm@clusters[[i]])))
 gnm_GFC = gnm_GFC_tmp$i[order(gnm_GFC_tmp$apcl_gnm.clusters..i.., decreasing = F)]
 gnm_GFC[gnm_GFC == 0] = "uncl."
 table(gnm_GFC)
+
+
+## extract hierarchical cluster from apcluster results
+gnm_dist = as.matrix(cophenetic(as.dendrogram(aggExCluster(s = gnm_cor, x = apcl_gnm))))
+gnm_dist = gnm_hc[match(row.names(gnm_cor), row.names(gnm_dist)), 
+                match(colnames(gnm_cor), colnames(gnm_dist))]
+gnm_hc = hclust(as.dist(gnm_dist))
+gnm_hc = reorder(gnm_hc, wts = colSums(trait_cor), agglo.FUN = "mean") # improve dendro sorting
+gnm_hc$order = as.integer(gnm_hc$order) # otherwise it rises an issue when plotting with iheatmapr
 
 
 
@@ -81,8 +81,8 @@ GFC_table$`Gene annotated` = sapply(GFC_table$Filename, function(i) {
 })
 GFC_table$`Gene annotated (%)` = round(GFC_table$`Gene annotated` / GFC_table$`#genes`, 2)
 
-GFC_table = GFC_table[with(GFC_table, order(as.integer(GFC), `GTDB taxonomy`, Species)), ]
-# write.table(GFC_table, "GFC_table.tsv", quote = F, row.names = F, col.names = T, sep = "\t", na = "")
+# GFC_table.nice = GFC_table[with(GFC_table, order(as.integer(GFC), `GTDB taxonomy`, Species)), ]
+# write.table(GFC_table.nice, "GFC_table.tsv", quote = F, row.names = F, col.names = T, sep = "\t", na = "")
 
 
 
@@ -149,20 +149,20 @@ trait_cor[trait_cor < 0] = 0
 # #---
 apcl_trait = apcluster(s = trait_cor, details=T, q=0.5, lam=0.5, seed=1234, maxits=1000, convits=500)
 
-## workaround to get hclust from apcluster
-trait_hc_tmp = 1 - as.matrix(cophenetic(as.dendrogram(aggExCluster(s = trait_cor, x = apcl_trait))))
-trait_hc_tmp = trait_hc_tmp[match(colnames(trait_cor), row.names(trait_hc_tmp)), 
-                             match(colnames(trait_cor), colnames(trait_hc_tmp))]
-trait_hc = as.hclust(aggExCluster(s = trait_hc_tmp))
-trait_hc = reorder(trait_hc, wts = colSums(trait_cor), agglo.FUN = "mean") # improve dendro sorting
-trait_hc$order = as.integer(trait_hc$order) # otherwise it rises an issue when plotting with iheatmapr
-##---
-
 # heatmap(apcl_trait, trait_dist); # plot(apcl_trait, ); 
 trait_LTC_tmp = do.call(rbind, lapply(1:length(apcl_trait@clusters), function(i) data.frame(i, apcl_trait@clusters[[i]])))
 trait_LTC = trait_LTC_tmp$i[order(trait_LTC_tmp$apcl_trait.clusters..i.., decreasing = F)]
 trait_LTC[trait_LTC == 0] = "uncl."
 table(trait_LTC)
+
+
+## extract hierarchical cluster from apcluster results
+trait_dist = as.matrix(cophenetic(as.dendrogram(aggExCluster(s = trait_cor, x = apcl_trait))))
+trait_dist = trait_hc[match(row.names(trait_cor), row.names(trait_dist)), 
+                  match(colnames(trait_cor), colnames(trait_dist))]
+trait_hc = hclust(as.dist(trait_dist))
+trait_hc = reorder(trait_hc, wts = colSums(trait_cor), agglo.FUN = "mean") # improve dendro sorting
+trait_hc$order = as.integer(trait_hc$order) # otherwise it rises an issue when plotting with iheatmapr
 
 
 
