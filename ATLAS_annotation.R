@@ -764,7 +764,7 @@ KM_ann$KM_pa[, "M00122"] = new_b12_compl
 ##### create trait-table
 library(tidyr)
 library(dplyr)
-fun_profi = cbind(KM_ann$KM_pa
+gnm_profi = cbind(KM_ann$KM_pa
                   , ann_master_TAB %>% 
                     pivot_wider(id_cols = filename, names_from = TCdb, values_from = cnt, 
                                 values_fn = sum, values_fill = 0) %>% 
@@ -805,9 +805,9 @@ fun_profi = cbind(KM_ann$KM_pa
 
 ### filter out noise
 mtf = 0.03 # Minimum trait frequency
-good_traits = colnames(fun_profi)[colSums(fun_profi)/nrow(fun_profi) > mtf]
+good_traits = colnames(gnm_profi)[colSums(gnm_profi)/nrow(gnm_profi) > mtf]
 # good_traits = good_traits[!good_traits %in% colnames(trait_cor)[colSums(is.na(trait_cor)) > 0]]
-fun_profi_filt = fun_profi[, good_traits] 
+gnm_profi_filt = gnm_profi[, good_traits] 
 
 
 
@@ -818,8 +818,8 @@ fun_profi_filt = fun_profi[, good_traits]
 ### IV add trait metadata --------------------------------------------------
 
 ### create metadata table for traits
-trait_meta = data.frame(ID = colnames(fun_profi),
-                        RA = colSums(fun_profi)/nrow(fun_profi),
+trait_meta = data.frame(ID = colnames(gnm_profi),
+                        RA = colSums(gnm_profi)/nrow(gnm_profi),
                         "Annotation" = c(rep("KEGG modules", ncol(KM_ann$KM_pa))
                                          , rep("TCdb", length(na.omit(unique(ann_master_TAB$TCdb))))
                                          , rep("AntiSMASH", length(na.omit(unique(ann_master_TAB$SecMetab))))
@@ -846,7 +846,7 @@ trait_meta$Description[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Descri
 # write.table(trait_meta, "trait_meta.tsv", 
 #             col.names = T, row.names = F, quote = F, sep = "\t", na = "")
 
-trait_meta_filt = trait_meta[match(colnames(fun_profi_filt), trait_meta$ID), ]
+trait_meta_filt = trait_meta[match(colnames(gnm_profi_filt), trait_meta$ID), ]
 
 
 
@@ -858,6 +858,6 @@ trait_meta_filt = trait_meta[match(colnames(fun_profi_filt), trait_meta$ID), ]
 
 save(ann_master_TAB,
      KO_ann, transp_ann, sm_ann, ph_ann, vf_ann,
-     KM_ann, fun_profi, fun_profi_filt,
+     KM_ann, gnm_profi, gnm_profi_filt,
      trait_meta, trait_meta_filt,
      file = "Atlas_ann_v1.RData")

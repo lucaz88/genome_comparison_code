@@ -11,6 +11,7 @@ Sys.setlocale(category = "LC_ALL", locale = "en_US.UTF-8") # to get month names 
 # install.packages("BiocManager")
 # BiocManager::install(c("apcluster"))
 library(apcluster)
+library(reshape2)
 library(vegan)
 library(qualpalr); library(DescTools) # creates colored and gray palettes
 
@@ -18,7 +19,7 @@ library(qualpalr); library(DescTools) # creates colored and gray palettes
 ##!!! required files
 # Genome metadata (use Supplementary table 2 to replicate the manuscript anaysis or any metadata file of the genomes you are investigating; it needs a column containing the filename of the genome fasta for the mapping)
 gnm_meta = "/media/lucaz/DATA/Google_drive/Laboratorio/AAA_Progetti_NUOVI/2016_HFSP/4_paper_genome_comparison/6_REV_Comm_biology/Suppl_tables.xlsx" #! adjust the path
-# ann_master_TAB, fun_profi, fun_profi_filt and trait_meta_filt objects from the code ATLAS_annotation.R
+# ann_master_TAB, gnm_profi, gnm_profi_filt and trait_meta_filt objects from the code ATLAS_annotation.R
 load("Atlas_ann_v1.RData")
 
 
@@ -29,7 +30,7 @@ load("Atlas_ann_v1.RData")
 ##### Create Genome Functional Clusters (GFCs) ------------------------------------------------------
 
 ### calculate genome pairwise correlation (i.e. Pearson - r)
-gnm_cor = cor(t(fun_profi))
+gnm_cor = cor(t(gnm_profi))
 gnm_cor[gnm_cor < 0] = 0 #! there are no neg correlation (as expected)
 
 
@@ -46,25 +47,24 @@ gnm_cor[gnm_cor < 0] = 0 #! there are no neg correlation (as expected)
 # #---
 apcl_gnm = apcluster(s = gnm_cor, details=T, q=0.5, lam=0.5, seed=1234, maxits=1000, convits=500)
 
-# heatmap(apcl_gnm, gnm_dist); # plot(apcl_gnm, fun_profi); 
+# heatmap(apcl_gnm, gnm_cor); # plot(apcl_gnm, gnm_profi); 
 gnm_GFC_tmp = do.call(rbind, lapply(1:length(apcl_gnm@clusters), function(i) data.frame(i, apcl_gnm@clusters[[i]])))
 gnm_GFC = gnm_GFC_tmp$i[order(gnm_GFC_tmp$apcl_gnm.clusters..i.., decreasing = F)]
-gnm_GFC[gnm_GFC == 0] = "uncl."
 table(gnm_GFC)
 
 
 ## extract hierarchical cluster from apcluster results
 gnm_dist = as.matrix(cophenetic(as.dendrogram(aggExCluster(s = gnm_cor, x = apcl_gnm))))
-gnm_dist = gnm_hc[match(row.names(gnm_cor), row.names(gnm_dist)), 
-                match(colnames(gnm_cor), colnames(gnm_dist))]
-gnm_hc = hclust(as.dist(gnm_dist))
-gnm_hc = reorder(gnm_hc, wts = colSums(trait_cor), agglo.FUN = "mean") # improve dendro sorting
+gnm_dist = gnm_dist[match(row.names(gnm_cor), row.names(gnm_dist)), 
+                    match(colnames(gnm_cor), colnames(gnm_dist))]
+gnm_hc = hclust(as.dist(gnm_dist), "complete")
+gnm_hc = reorder(gnm_hc, wts = colSums(gnm_cor), agglo.FUN = "mean") # improve dendro sorting
 gnm_hc$order = as.integer(gnm_hc$order) # otherwise it rises an issue when plotting with iheatmapr
 
 
 
 ### parse results
-GFC_table = data.frame(gnm=row.names(fun_profi), GFC=gnm_GFC)
+GFC_table = data.frame(gnm=row.names(gnm_profi), GFC=gnm_GFC)
 
 ## add metadata
 gnm_meta2 = as.data.frame(readxl::read_xlsx(gnm_meta, col_names = T, sheet = "S_tab_2", skip = 3)) 
@@ -80,9 +80,6 @@ GFC_table$`Gene annotated` = sapply(GFC_table$Filename, function(i) {
             1, function(j) any(!is.na(j))))
 })
 GFC_table$`Gene annotated (%)` = round(GFC_table$`Gene annotated` / GFC_table$`#genes`, 2)
-
-# GFC_table.nice = GFC_table[with(GFC_table, order(as.integer(GFC), `GTDB taxonomy`, Species)), ]
-# write.table(GFC_table.nice, "GFC_table.tsv", quote = F, row.names = F, col.names = T, sep = "\t", na = "")
 
 
 
@@ -132,8 +129,19 @@ pairFUN = function(mydata, fun.xy, ncore) {
   return(comb_mat)
 }
 
-trait_cor = pairFUN(fun_profi_filt, fun.xy = f_r, ncore = 7)
+trait_cor = pairFUN(gnm_profi_filt, fun.xy = f_r, ncore = 7)
 trait_cor[trait_cor < 0] = 0
+
+
+## test for significant correlation (r)
+pair_r = trait_cor
+pair_r[upper.tri(trait_cor, diag = T)] = NA
+pair_r = melt(pair_r, na.rm = T)
+pair_r$x2 = sapply(pair_r$value, function(i) i^2 * nrow(gnm_profi_filt)) # x2 test
+pair_r$p.val = sapply(pair_r$x2, function(i) pchisq(i, df=2, lower.tail=F))
+pair_r$p.val.adj = p.adjust(pair_r$p.val, method = "fdr")
+min_signif_r = min(pair_r$value[pair_r$p.val.adj <= 0.05])
+trait_cor[trait_cor < min_signif_r] = 0
 
 
 
@@ -149,18 +157,17 @@ trait_cor[trait_cor < 0] = 0
 # #---
 apcl_trait = apcluster(s = trait_cor, details=T, q=0.5, lam=0.5, seed=1234, maxits=1000, convits=500)
 
-# heatmap(apcl_trait, trait_dist); # plot(apcl_trait, ); 
+# heatmap(apcl_trait, trait_cor); # plot(apcl_trait, gnm_profi); 
 trait_LTC_tmp = do.call(rbind, lapply(1:length(apcl_trait@clusters), function(i) data.frame(i, apcl_trait@clusters[[i]])))
 trait_LTC = trait_LTC_tmp$i[order(trait_LTC_tmp$apcl_trait.clusters..i.., decreasing = F)]
-trait_LTC[trait_LTC == 0] = "uncl."
 table(trait_LTC)
 
 
 ## extract hierarchical cluster from apcluster results
 trait_dist = as.matrix(cophenetic(as.dendrogram(aggExCluster(s = trait_cor, x = apcl_trait))))
-trait_dist = trait_hc[match(row.names(trait_cor), row.names(trait_dist)), 
-                  match(colnames(trait_cor), colnames(trait_dist))]
-trait_hc = hclust(as.dist(trait_dist))
+trait_dist = trait_dist[match(row.names(trait_cor), row.names(trait_dist)), 
+                        match(colnames(trait_cor), colnames(trait_dist))]
+trait_hc = hclust(as.dist(trait_dist), "complete")
 trait_hc = reorder(trait_hc, wts = colSums(trait_cor), agglo.FUN = "mean") # improve dendro sorting
 trait_hc$order = as.integer(trait_hc$order) # otherwise it rises an issue when plotting with iheatmapr
 
@@ -168,19 +175,44 @@ trait_hc$order = as.integer(trait_hc$order) # otherwise it rises an issue when p
 
 ### parse results
 
-## mark LTCs with ITs
+#! mark LTCs with ITs
 LTC_with_IT = as.matrix(table(trait_LTC, !is.na(trait_meta_filt$`Interaction traits`)))
 LTC_with_IT = LTC_with_IT[!grepl("uncl.", row.names(LTC_with_IT)), ] # avoid marking 'uncl.'
 trait_LTC[trait_LTC %in% row.names(LTC_with_IT)[LTC_with_IT[, "TRUE"] > 0]] = paste0(trait_LTC[trait_LTC %in% row.names(LTC_with_IT)[LTC_with_IT[, "TRUE"] > 0]], "*")
 
-trait_LTC_col = ColToGray(qualpal(n = length(unique(trait_LTC)), "rainbow")$hex) #!! gray-scale
-# trait_LTC_col = qualpal(n = length(unique(trait_LTC)), "rainbow")$hex #!! colors
-trait_LTC_col = trait_LTC_col[match(trait_LTC, unique(trait_LTC))]
+LTC_table = data.frame(LTC=trait_LTC, 
+                       LTC_size=as.integer(table(trait_LTC))[match(trait_LTC, names(table(trait_LTC)))])
 
-LTC_table = cbind(trait_meta_filt, 
-                   data.frame(LTC=trait_LTC, 
-                              LTC_size=as.integer(table(trait_LTC))[match(trait_LTC, names(table(trait_LTC)))], 
-                              LTC_col=trait_LTC_col))
+
+## find bearing GFCs
+#! LTC completeness in gnm (> 60% genetic traits are complete in a genome)
+LTC_in_gnm = lapply(split(as.data.frame(t(gnm_profi_filt)), f=LTC_table$LTC), 
+                    function(i) ifelse(colMeans(i) > 0.6, 1, 0))
+LTC_in_gnm = do.call(rbind, LTC_in_gnm)
+#! LTC completeness in GFC (> 60% genomes have that LTC complete)
+LTC_in_GFC = lapply(split(as.data.frame(t(LTC_in_gnm)), f=GFC_table$GFC), 
+                    function(i) ifelse(colMeans(i) > 0.6, 1, 0))
+LTC_in_GFC = do.call(rbind, LTC_in_GFC)
+LTC_in_GFC = melt(LTC_in_GFC, varnames = c("GFC", "LTC"))
+LTC_in_GFC = LTC_in_GFC[LTC_in_GFC$value > 0, ]
+LTC_in_GFC = LTC_in_GFC[order(LTC_in_GFC$GFC, decreasing = F), ]
+LTC_in_GFC = aggregate(GFC~LTC, LTC_in_GFC, FUN = function(i) paste(i, collapse = ","))
+
+LTC_table$bearing_GFC = LTC_in_GFC$GFC[match(LTC_table$LTC, LTC_in_GFC$LTC)]
+LTC_table$LTC[is.na(LTC_table$bearing_GFC)] = "uncl."
+LTC_table$LTC_size[is.na(LTC_table$bearing_GFC)] = sum(is.na(LTC_table$bearing_GFC))
+
+
+## mean correlation (r) in each LTC
+LTC_mean_r = as.data.frame(t(sapply(unique(LTC_table$LTC), function(i) {
+  i2 = trait_cor[LTC_table$LTC == i, LTC_table$LTC == i]
+  c(LTC=i, mean_r=mean(i2[upper.tri(i2, diag = F)]))
+})))
+LTC_table$mean_r = round(as.numeric(LTC_mean_r$mean_r[match(LTC_table$LTC, LTC_mean_r$LTC)]), 2)
+
+
+## add metadata
+LTC_table = cbind(LTC_table, trait_meta_filt)
 
 
 
@@ -192,7 +224,7 @@ LTC_table = cbind(trait_meta_filt,
 
 save(ann_master_TAB,
      KO_ann, transp_ann, sm_ann, ph_ann, vf_ann,
-     KM_ann, fun_profi, fun_profi_filt,
+     KM_ann, gnm_profi, gnm_profi_filt,
      trait_meta, trait_meta_filt,
      gnm_cor, gnm_hc, GFC_table, trait_cor, trait_hc, LTC_table,
      file = "Atlas_ann_v1_stat.RData")
