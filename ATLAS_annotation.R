@@ -33,7 +33,7 @@ KM_code = "/home/lucaz/myscript/GitHub/gnm_compar/KM_reconstruction.R"
 KMds = "/home/lucaz/myscript/GitHub/gnm_compar/KM_str_2020-01-09_plus.rds"
 
 
-load("Atlas_ann_v1.RData")
+# load("Atlas_ann_v1.RData")
 #
 
 
@@ -761,7 +761,7 @@ KM_ann$KM_pa[, "M00122"] = new_b12_compl
 
 
 
-##### create trait-table
+##### create table of genome functional profiles
 library(tidyr)
 library(dplyr)
 gnm_profi = cbind(KM_ann$KM_pa
@@ -803,9 +803,9 @@ gnm_profi = cbind(KM_ann$KM_pa
 )
 
 
-### filter out noise
+### filter out 'rare' genetic traits
 mtf = 0.03 # Minimum trait frequency
-good_traits = colnames(gnm_profi)[colSums(gnm_profi)/nrow(gnm_profi) > mtf]
+good_traits = colnames(gnm_profi)[round(colSums(gnm_profi)/nrow(gnm_profi), 2) >= mtf]
 # good_traits = good_traits[!good_traits %in% colnames(trait_cor)[colSums(is.na(trait_cor)) > 0]]
 gnm_profi_filt = gnm_profi[, good_traits] 
 
@@ -830,7 +830,7 @@ trait_meta = data.frame(ID = colnames(gnm_profi),
                                          , rep("Manual", length(na.omit(unique(ann_master_TAB$Taurine))))
                         ))
 library(readxl)
-suppl_info = lapply(4:7, function(i) {
+suppl_info = lapply(4:8, function(i) {
   meta = as.data.frame(read_xlsx(suppl_tabs, col_names = T, sheet = i, skip = 3)) 
   meta = meta[!is.na(meta$Description), ] # remove extra lines in Excel table
 })
@@ -840,14 +840,13 @@ suppl_info = Reduce(function(x, y)
 trait_meta = merge(trait_meta, suppl_info, by="ID", all=T)
 trait_meta = trait_meta[, c(1,2,3,4,6,10,11,7)]
 
-## add details on transporter
+## add details of transporters
 trait_meta$Description[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)] = 
   paste(transp_ann$Predicted_Substrate[match(trait_meta$ID[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)], transp_ann$Hit_tcid)], "transporter")
-# write.table(trait_meta, "trait_meta.tsv", 
-#             col.names = T, row.names = F, quote = F, sep = "\t", na = "")
 
 trait_meta_filt = trait_meta[match(colnames(gnm_profi_filt), trait_meta$ID), ]
-
+# write.table(trait_meta, "trait_meta.tsv", 
+#             col.names = T, row.names = F, quote = F, sep = "\t", na = "")
 
 
 
