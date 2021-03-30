@@ -67,7 +67,7 @@ gnm_hc$order = as.integer(gnm_hc$order) # otherwise it rises an issue when plott
 GFC_table = data.frame(gnm=row.names(gnm_profi), GFC=gnm_GFC)
 
 ## add metadata
-gnm_meta2 = as.data.frame(readxl::read_xlsx(gnm_meta, col_names = T, sheet = "S_tab_2", skip = 3)) 
+gnm_meta2 = as.data.frame(readxl::read_xlsx(gnm_meta, col_names = T, sheet = "S_tab_3", skip = 3)) 
 gnm_meta2 = gnm_meta2[!is.na(gnm_meta2$Filename), ] # remove extra lines in Excel table
 #! the GFC info included in Supplementary table 2 will be overwritten by this code
 GFC_table = cbind(GFC_table[, -c(1), drop=F], 
@@ -79,7 +79,7 @@ GFC_table$`Gene annotated` = sapply(GFC_table$Filename, function(i) {
   sum(apply(ann_master_TAB[ann_master_TAB$filename == i, c(6,8:17)], #! adjust the column range to include all you annotations in the master file
             1, function(j) any(!is.na(j))))
 })
-GFC_table$`Gene annotated (%)` = round(GFC_table$`Gene annotated` / GFC_table$`#genes`, 2)
+GFC_table$`Gene annotated %` = round(GFC_table$`Gene annotated` / GFC_table$`#genes`, 2)
 
 
 
@@ -157,7 +157,7 @@ trait_cor[trait_cor < min_signif_r] = 0
 # #---
 apcl_trait = apcluster(s = trait_cor, details=T, q=0.5, lam=0.5, seed=1234, maxits=1000, convits=500)
 
-# heatmap(apcl_trait, trait_cor); # plot(apcl_trait, gnm_profi); 
+# heatmap(apcl_trait, trait_cor); # plot(apcl_trait, t(gnm_profi_filt)); 
 trait_LTC_tmp = do.call(rbind, lapply(1:length(apcl_trait@clusters), function(i) data.frame(i, apcl_trait@clusters[[i]])))
 trait_LTC = trait_LTC_tmp$i[order(trait_LTC_tmp$apcl_trait.clusters..i.., decreasing = F)]
 table(trait_LTC)
@@ -196,7 +196,7 @@ LTC_in_GFC = do.call(rbind, LTC_in_GFC)
 LTC_in_GFC = melt(LTC_in_GFC, varnames = c("GFC", "LTC"))
 LTC_in_GFC = LTC_in_GFC[LTC_in_GFC$value > 0, ]
 LTC_in_GFC = LTC_in_GFC[order(LTC_in_GFC$GFC, decreasing = F), ]
-LTC_in_GFC = aggregate(GFC~LTC, LTC_in_GFC, FUN = function(i) paste(i, collapse = ","))
+LTC_in_GFC = aggregate(GFC~LTC, LTC_in_GFC, FUN = function(i) paste(i, collapse = ", "))
 
 LTC_table$bearing_GFC = LTC_in_GFC$GFC[match(LTC_table$LTC, LTC_in_GFC$LTC)]
 LTC_table$LTC[is.na(LTC_table$bearing_GFC)] = "uncl."

@@ -50,10 +50,10 @@ list.gnm = list.files("1_gnm", pattern = ".fna$", full.names = T)
 sapply(list.gnm, function(j) system2(command = "prokka", args = c(paste0("--outdir 3_Ann/Prokka/", gsub(".fna", "", basename(j))),
                                                                   j, "--cpus 7", "--compliant", "--rnammer"), stderr = F)) # "--norrna" "--notrna"
 
-# clean up
-system("gio trash 3_Ann/Prokka/*/*.fna")
-system("gio trash 3_Ann/Prokka/*/*.fsa")
-system("gio trash 3_Ann/Prokka/*/*.sqn")
+# # clean up
+# system("gio trash 3_Ann/Prokka/*/*.fna")
+# system("gio trash 3_Ann/Prokka/*/*.fsa")
+# system("gio trash 3_Ann/Prokka/*/*.sqn")
 
 # merge all genomes and add filename in header
 #! speeds up other annotations (e.g. KOfam that iterates per KO)
@@ -282,43 +282,42 @@ transp_ann3 = data.frame(transp_ann2[, c("X.Query_id","Hit_tcid","Family_Abrv")]
                         Predicted_Substrate=gsub("CHEBI:[0-9]+;", "", transp_ann2[, "Predicted_Substrate"]),
                         CHEBI=sapply(str_extract_all(transp_ann2[, "Predicted_Substrate"], "CHEBI:[0-9]+"), paste0, collapse=";"))
 
-# #! Select B-vitamin transporters
-# transp_ann4 = transp_ann3[sapply(transp_ann3$CHEBI, function(i) {
-#   any(strsplit(i, ";")[[1]] %in% 
-#         c("CHEBI:15956", "CHEBI:41236", "CHEBI:13905", "CHEBI:22882", "CHEBI:22884", "CHEBI:3108" #B7
-#           , "CHEBI:30411" #B12
-#           , "CHEBI:17439", "CHEBI:60496", "CHEBI:48820", "CHEBI:3979", "CHEBI:14041", "CHEBI:23435" #CYANO-B12
-#           , "CHEBI:17154", "CHEBI:44258", "CHEBI:7556", "CHEBI:14645", "CHEBI:25521" #B3-nicotinamide
-#           , "CHEBI:15940", "CHEBI:44319", "CHEBI:7559", "CHEBI:25538" #B3-nicotinic acid
-#           , "CHEBI:9532" #B1-2P
-#           # , "CHEBI:9533" #B1-1P
-#           # , "CHEBI:18385", "CHEBI:46393", "CHEBI:9530", "CHEBI:15227", "CHEBI:26941" #B1-noP
-#         ))}), ]
-# 
-# #! drop drug efflux pumps
-# bad_transp = unique(transp_ann4$Predicted_Substrate)[c(1,4,10,13,14,15,16)] #!!! manual inspect for suspicious transporters and edit
-# transp_ann4 = transp_ann4[!transp_ann4$Predicted_Substrate %in% bad_transp, ]
+# #! remove generic transporter (e.g. for ions, metals and without a predicted substrate)
+# bad_cpd = c("None","hydron","ion","cation","anion","proton","sodium(1+)",
+#             "potassium(1+)","calcium(2+)","lithium(1+)","chloride","electron",
+#             "fluoride","barium(2+)","strontium(2+)","cadmium(2+)","lead(2+)",
+#             "cobalt(2+)","mercury(2+)","nickel(2+)","zinc(2+)","dioxygen",
+#             "carbon dioxide","rubidium(1+)","iron(3+)","iron(2+)","manganese(2+)",
+#             "magnesium(2+)","metal cation","molecule","copper(1+)","zinc ion",
+#             "water","metabolite","dicarboxylic acid dianion","copper cation",
+#             "surfactant","vanadium oxoanion","monocarboxylic acid anion",
+#             "calcium ion","inorganic anion","base","inorganic cation",
+#             "monoatomic monocation","sodium atom","lithium atom","copper(2+)",
+#             "chromate(2-)","silver(1+)","selenite(2-)","detergent",
+#             "hydrogencarbonate","arsenite(3-)","arsenate(3-)",
+#             "arsenic molecular entity","benzalkonium chloride",
+#             "sodium dodecyl sulfate","CCCP","antimonite","aluminium(3+)",
+#             "sodium tungstate","molybdate","bromide","sodium iodide",
+#             "chlorate","bromate","periodate","thiocyanate","tetrafluoroborate(1-)",
+#             "nitric acid","silicic acid","sodium chloride","potassium chloride",
+#             "tungstate","silicate(4-)","silicon atom","caesium(1+)","mercury(0)")
+# transp_ann4 = transp_ann3[!sapply(transp_ann3$Predicted_Substrate, function(z) all(strsplit(z, ", ")[[1]] %in% bad_cpd)), ]
 
-#! remove generic transporter (e.g. for ions, metals and without a predicted substrate)
-bad_cpd = c("None","hydron","ion","cation","anion","proton","sodium(1+)",
-            "potassium(1+)","calcium(2+)","lithium(1+)","chloride","electron",
-            "fluoride","barium(2+)","strontium(2+)","cadmium(2+)","lead(2+)",
-            "cobalt(2+)","mercury(2+)","nickel(2+)","zinc(2+)","dioxygen",
-            "carbon dioxide","rubidium(1+)","iron(3+)","iron(2+)","manganese(2+)",
-            "magnesium(2+)","metal cation","molecule","copper(1+)","zinc ion",
-            "water","metabolite","dicarboxylic acid dianion","copper cation",
-            "surfactant","vanadium oxoanion","monocarboxylic acid anion",
-            "calcium ion","inorganic anion","base","inorganic cation",
-            "monoatomic monocation","sodium atom","lithium atom","copper(2+)",
-            "chromate(2-)","silver(1+)","selenite(2-)","detergent",
-            "hydrogencarbonate","arsenite(3-)","arsenate(3-)",
-            "arsenic molecular entity","benzalkonium chloride",
-            "sodium dodecyl sulfate","CCCP","antimonite","aluminium(3+)",
-            "sodium tungstate","molybdate","bromide","sodium iodide",
-            "chlorate","bromate","periodate","thiocyanate","tetrafluoroborate(1-)",
-            "nitric acid","silicic acid","sodium chloride","potassium chloride",
-            "tungstate","silicate(4-)","silicon atom","caesium(1+)","mercury(0)")
-transp_ann4 = transp_ann3[!sapply(transp_ann3$Predicted_Substrate, function(z) all(strsplit(z, ", ")[[1]] %in% bad_cpd)), ]
+#! Select only B-vitamin & siderophore transporters
+library(webchem)
+chebi_sid = get_chebiid("siderophore")
+transp_ann4 = transp_ann3[sapply(transp_ann3$CHEBI, function(i) {
+  any(strsplit(i, ";")[[1]] %in%
+        c("CHEBI:15956", "CHEBI:41236", "CHEBI:13905", "CHEBI:22882", "CHEBI:22884", "CHEBI:3108" #B7
+          , "CHEBI:30411" #B12
+          , "CHEBI:17439", "CHEBI:60496", "CHEBI:48820", "CHEBI:3979", "CHEBI:14041", "CHEBI:23435" #CYANO-B12
+          , "CHEBI:17154", "CHEBI:44258", "CHEBI:7556", "CHEBI:14645", "CHEBI:25521" #B3-nicotinamide
+          , "CHEBI:15940", "CHEBI:44319", "CHEBI:7559", "CHEBI:25538" #B3-nicotinic acid
+          , "CHEBI:9532" #B1-2P
+          , "CHEBI:9533" #B1-1P
+          , "CHEBI:18385", "CHEBI:46393", "CHEBI:9530", "CHEBI:15227", "CHEBI:26941" #B1-noP
+          , chebi_sid$chebiid #siderophores
+        ))}), ]
 
 # #! if you wanna keep all transporters
 # transp_ann4 = transp_ann3
@@ -372,7 +371,7 @@ sm_ann4 = do.call(rbind, sm_ann4)
 sm_ann4 = sm_ann4[!grepl("unknown|,", sm_ann4$Type), ]
 
 # #! select only relevant ones
-# sm_list = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_6", skip = 3)) 
+# sm_list = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_7", skip = 3)) 
 # sm_list = sm_list[!is.na(sm_list$`Interaction traits`), ] # remove extra lines in Excel table
 # sm_ann4 = sm_ann4[sm_ann4$Type %in% sm_list$ID[sm_list$`Interaction traits` != "-"], ]
 
@@ -413,7 +412,7 @@ ph_ann2 = ph_ann2[ph_ann2$V11 < 5, ] # Zhang et al., 2019
 ph_ann2 = ph_ann2[ph_ann2$V12 > 60, ] # Zhang et al., 2019
 
 ## check for any path in genomes using the annotated KOs
-ph_list = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_7", skip = 3)) 
+ph_list = as.data.frame(readxl::read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_8", skip = 3)) 
 ph_list = ph_list[!is.na(ph_list$`Interaction traits`), ] # remove extra lines in Excel table
 ph_list = split(ph_list$`KEGG Orthology`, f = ph_list$`Interaction traits`)
 ph_list = lapply(ph_list, function(i) strsplit(gsub("\\n| ", "", i), "\\|"))
@@ -479,8 +478,8 @@ vf_ann1 = read.delim("3_Ann/Vibrioferrin/Vibrioferrin_blastp.tsv", h=F)
 
 vf_ann1$gene_ID = gsub(".*\\.","",vf_ann1$V1)
 vf_ann2 = vf_ann1
-vf_ann2 = vf_ann2[vf_ann2$V11 < 1e-5, ] # filter based on min e-value
-# vf_ann2 = vf_ann2[vf_ann2$V12 > 60, ] # filter based on min bit score
+vf_ann2 = vf_ann2[vf_ann2$V11 < 1e-5, ] # filter based on min e-value, Amin et al, 2012
+vf_ann2 = vf_ann2[vf_ann2$V3 > 30, ] # filter based on min similarity, Amin et al, 2012
 
 #! get coherent gene names
 vf_ann2$gene_name = sapply(vf_ann2$V13, function(i) {
@@ -671,7 +670,7 @@ KM_bm4 = KM_bm4[apply(KM_bm4[, -1], 1, function(z) any(z > 0.03)), ] #remove KM 
 ## make table
 # ??? missing text names for KM of length 2
 library(readxl)
-KM_meta = as.data.frame(read_xlsx(suppl_tabs, col_names = T, sheet = 5, skip = 3))
+KM_meta = as.data.frame(read_xlsx(suppl_tabs, col_names = T, sheet = "S_tab_6", skip = 3))
 KM_meta = KM_meta[!is.na(KM_meta$Description), ]
 # KM_meta = read.delim("/media/lucaz/DATA/DBs_repository/KEGG/KEGG_M_hier_9jan20plus.txt")
 # KM_meta$ID = gsub(" .*", "", KM_meta[, 4]) 
@@ -829,21 +828,28 @@ trait_meta = data.frame(ID = colnames(gnm_profi),
                                          , rep("Manual", length(na.omit(unique(ann_master_TAB$DHPS))))
                                          , rep("Manual", length(na.omit(unique(ann_master_TAB$Taurine))))
                         ))
+write.table(trait_meta, "annotated_traits.tsv", col.names = T, row.names = F, quote = F, sep = "\t")
+
+## add manual annotations 
+#! if you run your own analysis, you need to adjust following lines to your metadata files
 library(readxl)
-suppl_info = lapply(4:8, function(i) {
+suppl_info = lapply(5:9, function(i) {
   meta = as.data.frame(read_xlsx(suppl_tabs, col_names = T, sheet = i, skip = 3)) 
   meta = meta[!is.na(meta$Description), ] # remove extra lines in Excel table
 })
 suppl_info = Reduce(function(x, y) 
-  merge(x, y, by=c("ID","Description","Frequency","Interaction traits","Notes","Reference"), 
+  merge(x, y, by=c("ID","Description","Frequency","Interaction traits","Notes"), 
         all=T), suppl_info)
 trait_meta = merge(trait_meta, suppl_info, by="ID", all=T)
-trait_meta = trait_meta[, c(1,2,3,4,6,10,11,7)]
+trait_meta = trait_meta[!is.na(trait_meta$Description), ] #! remove traits that were removed in manual check
+trait_meta = trait_meta[, c("ID","Description","Interaction traits","Frequency","Annotation","KEGG hierarchy","...6","Notes")]
+# #! add details of transporters
+# trait_meta$Description[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)] = 
+#   paste(transp_ann$Predicted_Substrate[match(trait_meta$ID[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)], transp_ann$Hit_tcid)], "transporter")
 
-## add details of transporters
-trait_meta$Description[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)] = 
-  paste(transp_ann$Predicted_Substrate[match(trait_meta$ID[trait_meta$Annotation == "TCdb" & is.na(trait_meta$Description)], transp_ann$Hit_tcid)], "transporter")
-
+gnm_profi = gnm_profi[, colnames(gnm_profi) %in% trait_meta$ID]
+trait_meta = trait_meta[match(colnames(gnm_profi), trait_meta$ID), ]
+gnm_profi_filt = gnm_profi_filt[, colnames(gnm_profi_filt) %in% colnames(gnm_profi)]
 trait_meta_filt = trait_meta[match(colnames(gnm_profi_filt), trait_meta$ID), ]
 # write.table(trait_meta, "trait_meta.tsv", 
 #             col.names = T, row.names = F, quote = F, sep = "\t", na = "")
@@ -860,3 +866,6 @@ save(ann_master_TAB,
      KM_ann, gnm_profi, gnm_profi_filt,
      trait_meta, trait_meta_filt,
      file = "Atlas_ann_v1.RData")
+
+
+
