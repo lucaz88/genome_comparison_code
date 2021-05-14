@@ -1,4 +1,4 @@
-## set working directory
+## set your working directory
 setwd("/media/lucaz/DATA/HB_complete_genomes_v4/")
 
 
@@ -65,21 +65,22 @@ gnm_hc$order = as.integer(gnm_hc$order) # otherwise it rises an issue when plott
 
 ### parse results
 GFC_table = data.frame(gnm=row.names(gnm_profi), GFC=gnm_GFC)
+GFC_table$GFC_size = as.integer(table(GFC_table$GFC))[match(GFC_table$GFC, names(table(GFC_table$GFC)))]
 
 ## add metadata
-gnm_meta2 = as.data.frame(readxl::read_xlsx(gnm_meta, col_names = T, sheet = "S_tab_3", skip = 3)) 
+gnm_meta2 = as.data.frame(readxl::read_xlsx(gnm_meta, col_names = T, sheet = "S_tab_2", skip = 3)) 
 gnm_meta2 = gnm_meta2[!is.na(gnm_meta2$Filename), ] # remove extra lines in Excel table
-#! the GFC info included in Supplementary table 2 will be overwritten by this code
+gnm_meta2 = gnm_meta2[, -c(1,2)] #! the GFC info included in Supplementary table 2 will be overwritten by this code
 GFC_table = cbind(GFC_table[, -c(1), drop=F], 
-                  gnm_meta2[match(GFC_table$gnm, gnm_meta2$Filename), -1])
+                  gnm_meta2[match(GFC_table$gnm, gnm_meta2$Filename), ])
 
 ## add annotation info
 GFC_table$`#genes` = sapply(GFC_table$Filename, function(i) sum(ann_master_TAB$filename == i))
-GFC_table$`Gene annotated` = sapply(GFC_table$Filename, function(i) { 
+Gene_annotated = sapply(GFC_table$Filename, function(i) { 
   sum(apply(ann_master_TAB[ann_master_TAB$filename == i, c(6,8:17)], #! adjust the column range to include all you annotations in the master file
             1, function(j) any(!is.na(j))))
 })
-GFC_table$`Gene annotated %` = round(GFC_table$`Gene annotated` / GFC_table$`#genes`, 2)
+GFC_table$`Gene annotated %` = round(Gene_annotated / GFC_table$`#genes`, 2)
 
 
 
@@ -187,11 +188,11 @@ LTC_table = data.frame(LTC=trait_LTC,
 ## find bearing GFCs
 #! LTC completeness in gnm (> 60% genetic traits are complete in a genome)
 LTC_in_gnm = lapply(split(as.data.frame(t(gnm_profi_filt)), f=LTC_table$LTC), 
-                    function(i) ifelse(colMeans(i) > 0.6, 1, 0))
+                    function(i) ifelse(colMeans(i) > 0.5, 1, 0))
 LTC_in_gnm = do.call(rbind, LTC_in_gnm)
 #! LTC completeness in GFC (> 60% genomes have that LTC complete)
 LTC_in_GFC = lapply(split(as.data.frame(t(LTC_in_gnm)), f=GFC_table$GFC), 
-                    function(i) ifelse(colMeans(i) > 0.6, 1, 0))
+                    function(i) ifelse(colMeans(i) > 0.5, 1, 0))
 LTC_in_GFC = do.call(rbind, LTC_in_GFC)
 LTC_in_GFC = melt(LTC_in_GFC, varnames = c("GFC", "LTC"))
 LTC_in_GFC = LTC_in_GFC[LTC_in_GFC$value > 0, ]

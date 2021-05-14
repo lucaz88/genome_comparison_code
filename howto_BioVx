@@ -1,0 +1,23 @@
+### Biovx (annotate transporters)
+
+# HMMTOP - get it online here 'http://hmmtop.enzim.hu/'
+tar -zxvf ~/Downloads/Programmi_LAB/Annotation/hmmtop_2.1.tgz -C ~
+cd ~/hmmtop_2.1
+cc hmmtop.c -lm -o hmmtop
+export PATH="${PATH}:/home/lucaz/hmmtop_2.1"
+echo 'PATH="'$PATH'"' | sudo tee /etc/environment
+gedit ~/.bashrc
+# add following variables:
+export HMMTOP_PSV="/home/lucaz/hmmtop_2.1/hmmtop.psv"
+export HMMTOP_ARCH="/home/lucaz/hmmtop_2.1/hmmtop.arch"
+
+# create conda environment
+conda create -n BioVx python=2.7.18 pip=19.3.1
+conda activate BioVx
+pip install biopython==1.75 blast matplotlib mechanize scipy
+
+# clone BioVx repo
+git clone https://github.com/SaierLaboratory/BioVx.git ~/BioVx
+# cd ~/BioVx; git pull origin master # to update
+export PATH="${PATH}:/home/lucaz/BioVx/scripts"
+echo 'PATH="'$PATH'"' | sudo tee /etc/environment

@@ -1,4 +1,4 @@
-## set working directory
+## set your working directory
 # setwd("/media/lucaz/Bioinfo/HB_complete_genomes_v4/")
 setwd("/media/lucaz/DATA/HB_complete_genomes_v4/")
 
@@ -11,7 +11,7 @@ Sys.setlocale(category = "LC_ALL", locale = "en_US.UTF-8") # to get month names 
 ##!!! following tools must be correctly installed (check required dependencies) in the system
 #a prokka (https://github.com/tseemann/prokka)
 #b kofamscan (https://github.com/takaram/kofam_scan)
-#c gblast (http://www.tcdb.org/files/gblast.zip)
+#c gblast (https://github.com/SaierLaboratory/BioVx/blob/master/manuals/BioV_manual.pdf) - if you have problems with the official installation, check my workaround in 'howto_BioVx' 
 #d Antismash (https://antismash.secondarymetabolites.org/#!/download)
 #e blast+ (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE_TYPE=BlastDocs&DOC_TYPE=Download)
 
