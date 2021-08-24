@@ -7,17 +7,18 @@ KMdiagram_fetcher <- function(ncore, create_RData=T, path=getwd(), new_date=Sys.
   
   
   ## (get &)load packages
-  if (!"BiocManager" %in% installed.packages()) install.packages("BiocManager")
-  pkg_list <- c("stringr", "xml2", "KEGGREST", "future.apply")
-  new_pkg <- pkg_list[!(pkg_list %in% installed.packages()[,"Package"])]
-  if (length(new_pkg)) BiocManager::install(new_pkg)
-  sapply(pkg_list, library, character.only = T)
+  if (!require(BiocManager)) install.packages('BiocManager')
+  library(BiocManager)
+  req_pkgs <- c("stringr", "xml2", "KEGGREST", "future.apply")
+  invisible(lapply(req_pkgs, function(i) {
+    if (!require(i, character.only = T)) BiocManager::install(i, update = F)
+    library(i, character.only = T)
+  }))
   
   
   ## get list of KM names
-  x <- readLines("https://www.genome.jp/kegg-bin/download_htext?htext=ko00002.keg&format=htext&filedir=")
-  x <- x[grep("^D", x)]
-  KM_list <- str_extract(x, "M[0-9]{5}")
+  KM_list <- keggList("module")
+  KM_list <- str_extract(names(KM_list), "M[0-9]{5}")
   
   
   ## fetch diagrams
