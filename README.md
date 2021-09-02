@@ -18,8 +18,9 @@ unzip(zipfile=filename, exdir=".")
 # load and run the code
 source("./genome_comparison_code-main/KM_reconstruction.R")
 KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T,
-                            path = "~/Downloads/genome_comparison_code-main") # it takes a few minutes
-myannotation <- read.csv("example_KO_table.csv", header = T, row.names = 1)
+                            path = "./genome_comparison_code-main") # it takes a few minutes
+myannotation <- read.csv("./genome_comparison_code-main/example_KO_table.csv",
+                         header = T, row.names = 1)
 KMreco <- KMreco(indata = myannotation, KM_str = KM_str,  
                  len_breaks = c(3), allowed_gaps = c(0,1))
 
