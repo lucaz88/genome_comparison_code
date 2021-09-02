@@ -9,7 +9,7 @@
   
   USAGE EXAMPLE (type commands directly in R):
 ```  
-# Download Repository from GitHub, copy the link from `Code:` -> `Download ZIP`
+# Download Repository from GitHub (copy the link from `Code:` -> `Download ZIP`)
 repo_url <- "https://github.com/lucaz88/genome_comparison_code/archive/refs/heads/main.zip" 
 filename <- "genome_compar_git.zip"
 download.file(url=repo_url, destfile=filename)
