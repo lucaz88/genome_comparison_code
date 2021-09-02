@@ -11,7 +11,7 @@ KMdiagram_fetcher <- function(ncore, create_RData=T, path=getwd(), new_date=Sys.
   library(BiocManager)
   req_pkgs <- c("stringr", "xml2", "KEGGREST", "future.apply")
   invisible(lapply(req_pkgs, function(i) {
-    if (!require(i, character.only = T)) BiocManager::install(i, update = F)
+    if (!require(i, character.only = T, )) BiocManager::install(i, update = F)
     library(i, character.only = T)
   }))
   
@@ -24,7 +24,7 @@ KMdiagram_fetcher <- function(ncore, create_RData=T, path=getwd(), new_date=Sys.
   ## fetch diagrams
   plan(multiprocess, workers = ncore)
   fetched_KM <- future_lapply(KM_list, function(imod) { 
-    txt <- read_html(paste0("http://www.genome.jp/kegg-bin/show_module?", imod))
+    txt <- read_html(url(paste0("http://www.genome.jp/kegg-bin/show_module?", imod)))
     txt2 <- gsub(".*<map id=\"module\" name=\"module\">|</map>.*", "", txt)
     txt3 <- strsplit(txt2, "<area shape=\"rect\" ")[[1]][-1]
     txt4 <- t(as.data.frame(strsplit(txt3, '\\" ')))[, c(1,3,5), drop=F]
