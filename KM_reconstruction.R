@@ -24,8 +24,9 @@ KMdiagram_fetcher <- function(ncore=1, create_RData=T, path=getwd(), new_date=Sy
   ## fetch diagrams
   plan(multiprocess, workers = ncore)
   fetched_KM <- future_lapply(KM_list, function(imod) { 
-    txt <- read_html(url(paste0("http://www.genome.jp/kegg-bin/show_module?", imod)))
-    txt2 <- gsub(".*<map id=\"module\" name=\"module\">|</map>.*", "", txt)
+    txt <- url(paste0("http://www.genome.jp/kegg-bin/show_module?", imod), encoding = "UTF-8")
+    txt1 <- read_html(txt)
+    txt2 <- gsub(".*<map id=\"module\" name=\"module\">|</map>.*", "", txt1)
     txt3 <- strsplit(txt2, "<area shape=\"rect\" ")[[1]][-1]
     txt4 <- t(as.data.frame(strsplit(txt3, '\\" ')))[, c(1,3,5), drop=F]
     txt5 <- data.frame(row.names = NULL, KM_lvl=gsub("_.*", "", gsub('id=\"', "", txt4[,1])), KO_id=gsub(".*_", "", gsub('id=\"', "", txt4[,1])),

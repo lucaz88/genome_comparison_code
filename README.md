@@ -7,26 +7,32 @@
   - _KMdiagram_fetcher_ allows to retrieve the diagrams and store them as a list in a RData object. It uses parallelization to speed up the fetching process but don't exceed 6-7 instances as you might get errors due to a bottleneck presumibily in the KEGG API.
   - _KMreco_ uses the retrieved list of diagrams as masks to evaluate the completness of each KMs givens a table of annotated KOs. The input table is a presence/absence table (i.e. 0 and 1) and has samples as rows and annotated KOs as columns. Further arguments are "len_breaks" and "allowed_gaps" that can be used to specify the ammount of allowed gaps allowed in a KM to still call such KM complete depending on its lengths: len_breaks=c(3, 10), allowed_gaps=c(0,1,2) will allows 0 gaps for KM with &lt; 3 reactions, 1 gap for KM with 3 up to 9 reactions, 2 gaps for KM with ≥ 10 reactions. By defauls the function will not allow any gap regardless of the KM length, however, it's recomendable to set these values as issues in the annotation process that could lead to "artifical" gaps are always expected.
   
-  USAGE EXAMPLE (type commands directly in R):
-```  
-# Download Repository from GitHub (copy the link from `Code:` -> `Download ZIP`)
-repo_url <- "https://github.com/lucaz88/genome_comparison_code/archive/refs/heads/main.zip" 
-filename <- "genome_compar_git.zip"
-download.file(url=repo_url, destfile=filename)
-unzip(zipfile=filename, exdir=".")
+  **USAGE EXAMPLE (type commands directly in R):**  
+  !!! Run the code using an RStudio environment as prompting the commands in a stand-alone R instance will rise the following error:
 
-# load and run the code
-source("./genome_comparison_code-main/KM_reconstruction.R")
-KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T,
-                            path = "./genome_comparison_code-main") # it takes a few minutes
-myannotation <- read.csv("./genome_comparison_code-main/example_KO_table.csv",
-                         header = T, row.names = 1)
-KMreco <- KMreco(indata = myannotation, KM_str = KM_str,  
-                 len_breaks = c(3), allowed_gaps = c(0,1))
+  > Error curl::curl_fetch_memory(url, handle = handle) :  
+    > Received HTTP/0.9 when not allowed
+  
+  This bug seems relate to the function *read_html* from the xml2 library and we are working to fix it.
+  ```  
+  # Download Repository from GitHub (copy the link from `Code:` -> `Download ZIP`)
+  repo_url <- "https://github.com/lucaz88/genome_comparison_code/archive/refs/heads/main.zip" 
+  filename <- "genome_compar_git.zip"
+  download.file(url=repo_url, destfile=filename)
+  unzip(zipfile=filename, exdir=".")
 
-# example of the presence/absence table of KMs
-KMreco$KM_pa[1:5, 1:5]
-```
+  # load and run the code
+  source("./genome_comparison_code-main/KM_reconstruction.R")
+  KM_str <- KMdiagram_fetcher(ncore = 7, create_RData = T,
+                              path = "./genome_comparison_code-main") # it takes a few minutes
+  myannotation <- read.csv("./genome_comparison_code-main/example_KO_table.csv",
+                           header = T, row.names = 1)
+  KMreco <- KMreco(indata = myannotation, KM_str = KM_str,  
+                   len_breaks = c(3), allowed_gaps = c(0,1))
+
+  # example of the presence/absence table of KMs
+  KMreco$KM_pa[1:5, 1:5]
+  ```
 
 - _Statistical_analyses.R_ contains the statistical analysis for the creation of Genome Functional Clusters (GFCs) and the Linked-Trait Clusters (LTCs)
 
