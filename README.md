@@ -37,6 +37,11 @@
 - _Statistical_analyses.R_ contains the statistical analysis for the creation of Genome Functional Clusters (GFCs) and the Linked-Trait Clusters (LTCs)
 
 
+
+
+Cite the code: [![DOI](https://zenodo.org/badge/323959061.svg)](https://zenodo.org/badge/latestdoi/323959061)
+
+
 # Other files:
 - _example_KO_table.csv_ is a test dataset of KOs presence/absence for 5 genomes to test the _KM_reconstruction_ code
 - _KM_str_2020-01-09_plus.rds_ contains the KM structures updated to Jannuary 2020 plus the structures of transporters and two-component systems that were removed with the Release 92.0  of KEGG (October 1, 2019) as they were redundant with the BRITE hierarchies (not used in our analysis)
